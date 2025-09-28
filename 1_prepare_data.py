@@ -1,22 +1,3 @@
-#!/usr/bin/env python3
-"""
-Standalone Knowledge Graph Generator
-====================================
-
-This script combines data collection and processing into a single executable file.
-It collects episode data from Wikipedia and processes it into a knowledge graph.
-
-Usage:
-    uv run python standalone_knowledge_graph.py
-    
-    or simply:
-    
-    uv run standalone_knowledge_graph.py
-
-Requirements:
-    - OpenAI API key in .env file or OPENAI_API_KEY environment variable
-    - Internet connection for Wikipedia scraping and OpenAI API calls
-"""
 
 import json
 import re
@@ -28,13 +9,13 @@ import openai
 from dotenv import load_dotenv
 from pydantic import BaseModel
 
-# Load environment variables
+# 환경 변수 로드
 load_dotenv()
 
-# Initialize OpenAI client
+# OpenAI 클라이언트 초기화
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Type definitions
+# 타입 정의
 PropertyValue = Union[str, int, float, bool, None]
 
 class Node(BaseModel):
@@ -52,7 +33,7 @@ class GraphResponse(BaseModel):
     nodes: List[Node]
     relationships: List[Relationship]
 
-# Templates for LLM processing
+# LLM 처리용 템플릿
 UPDATED_TEMPLATE = """
 You are a top-tier algorithm designed for extracting information in structured formats to build a knowledge graph. Extract the entities (nodes) and specify their type from the following text, but **you MUST select nodes ONLY from the following predefined set** (see the provided NODES list below). Do not create any new nodes or use names that do not exactly match one in the NODES list.
 
@@ -96,9 +77,10 @@ NODES =
 ]
 """
 
-# Korean node name mapping
+# 한국어 노드 이름 매핑
+# 노드 이름 한글 매핑 (귀살대 · 도깨비)
 KOREAN_NODE_MAP = {
-    # 귀살대 (Demon Slayer Corps)
+    # 귀살대 (귀살대)
     "Tanjiro Kamado": "카마도 탄지로",
     "Nezuko Kamado": "카마도 네즈코",
     "Giyu Tomioka": "토미오카 기유",
@@ -113,7 +95,7 @@ KOREAN_NODE_MAP = {
     "Shinobu Kocho": "코쵸우 시노부",
     "Sanemi Shinazugawa": "시나즈가와 사네미",
 
-    # 도깨비 (Demons)
+    # 도깨비 (도깨비)
     "Muzan Kibutsuji": "키부츠지 무잔",
     "Susamaru": "스사마루",
     "Yahaba": "야하바",
@@ -122,8 +104,9 @@ KOREAN_NODE_MAP = {
     "Enmu": "엔무",
 }
 
-def llm_call_structured(prompt: str, model: str = "gpt-4o-mini") -> GraphResponse:
-    """Call OpenAI API with structured output"""
+
+def llm_call_structured(prompt: str, model: str = "gpt-4.1") -> GraphResponse:
+    """구조화된 출력으로 OpenAI API 호출"""
     resp = client.beta.chat.completions.parse(
         model=model,
         messages=[
@@ -133,41 +116,41 @@ def llm_call_structured(prompt: str, model: str = "gpt-4o-mini") -> GraphRespons
     )
     return resp.choices[0].message.parsed
 
-def combine_chunk_graphs(chunk_graphs: List[GraphResponse]) -> GraphResponse:
+def combine_chunk_graphs(chunk_graphs: list) -> 'GraphResponse':
     """
-    Combine multiple GraphResponse objects into one.
-    - Collects all nodes and relationships
-    - Removes duplicate nodes, keeping the first occurrence
+    여러 개의 GraphResponse 객체를 하나로 합칩니다.
+    - 모든 노드와 관계(relationship)를 모읍니다.
+    - 중복된 노드는 제거하고, 처음 등장한 노드만 남깁니다.
     """
-    # 1. Collect all nodes from all chunk graphs
+    # 1. 모든 chunk_graph에서 노드를 수집합니다
     all_nodes = []
     for chunk_graph in chunk_graphs:
         for node in chunk_graph.nodes:
             all_nodes.append(node)
     
-    # 2. Collect all relationships from all chunk graphs
+    # 2. 모든 chunk_graph에서 관계(relationship)를 수집합니다
     all_relationships = []
     for chunk_graph in chunk_graphs:
         for relationship in chunk_graph.relationships:
             all_relationships.append(relationship)
     
-    # 3. Remove duplicate nodes
+    # 3. 중복된 노드를 제거합니다
     unique_nodes = []
-    seen = set()  # Set to remember already added nodes
+    seen = set()  # 이미 추가된 노드를 기억해둘 집합
 
     for node in all_nodes:
-        # Create a key from node's id, label, and properties
+        # 노드의 id, label, properties를 묶어서 하나의 키로 만듭니다
         node_key = (node.id, node.label, str(node.properties))
-        # Add to unique_nodes if not already seen
+        # 이미 추가된 노드가 아니라면 unique_nodes에 추가합니다
         if node_key not in seen:
             unique_nodes.append(node)
             seen.add(node_key)
 
-    # 4. Return combined GraphResponse
+    # 4. 중복이 제거된 노드들과 모든 관계를 합쳐 새로운 GraphResponse를 만듭니다
     return GraphResponse(nodes=unique_nodes, relationships=all_relationships)
 
 def fetch_episode(link: str) -> List[dict]:
-    """Fetch episode data from Wikipedia"""
+    """위키피디아에서 에피소드 데이터를 가져옵니다"""
     season = int(re.search(r"season_(\d+)", link).group(1))
     print(f"Fetching Season {season} from: {link}")
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
@@ -195,12 +178,12 @@ def fetch_episode(link: str) -> List[dict]:
     return episodes
 
 def collect_data() -> List[dict]:
-    """Collect episode data from multiple seasons"""
+    """여러 시즌에서 에피소드 데이터를 수집합니다"""
     print("=== 데이터 수집 시작 ===")
     
     episode_links = [
         "https://en.wikipedia.org/wiki/Demon_Slayer:_Kimetsu_no_Yaiba_season_1",  # 귀멸의 칼날 시즌 1
-        # Add more seasons as needed:
+        # 필요에 따라 더 많은 시즌 추가:
         # "https://en.wikipedia.org/wiki/Demon_Slayer:_Kimetsu_no_Yaiba_season_2",  # 귀멸의 칼날 시즌 2
     ]
     
@@ -217,7 +200,7 @@ def collect_data() -> List[dict]:
     return all_episodes
 
 def process_data(episodes: List[dict]) -> GraphResponse:
-    """Process episode data into knowledge graph"""
+    """에피소드 데이터를 지식 그래프로 처리합니다"""
     print("=== 데이터 처리 시작 ===")
     
     chunk_graphs: List[GraphResponse] = []
@@ -230,11 +213,11 @@ def process_data(episodes: List[dict]) -> GraphResponse:
         print(f"에피소드 처리 중: 시즌 {episode['season']}, 에피소드 {episode['episode_in_season']}")
         
         try:
-            # (1) Generate prompt with updated template for node standardization
+            # (1) 노드 표준화를 위한 업데이트된 템플릿으로 프롬프트 생성
             prompt = UPDATED_TEMPLATE + f"\n 입력값\n {episode['synopsis']}"
             graph_response = llm_call_structured(prompt)
 
-            # (2) Add episode number to relationships (e.g., S1E01)
+            # (2) 관계에 에피소드 번호 추가 (예: S1E01)
             episode_number = f"S{episode['season']}E{episode['episode_in_season']:02d}"
 
             for relationship in graph_response.relationships:
@@ -242,7 +225,7 @@ def process_data(episodes: List[dict]) -> GraphResponse:
                     relationship.properties = {}
                 relationship.properties["episode_number"] = episode_number
                 
-            # (3) Convert node names to Korean
+            # (3) 노드 이름을 한국어로 변환
             for node in graph_response.nodes:
                 english_name = node.properties.get("name", "")
                 if english_name in KOREAN_NODE_MAP:
@@ -261,26 +244,26 @@ def process_data(episodes: List[dict]) -> GraphResponse:
     return combine_chunk_graphs(chunk_graphs)
 
 def save_output(episodes: List[dict], final_graph: GraphResponse):
-    """Save outputs to JSON files"""
+    """출력을 JSON 파일로 저장합니다"""
     print("=== 결과 저장 ===")
     
-    # Create output directory if it doesn't exist
+    # 출력 디렉토리가 없으면 생성
     os.makedirs("output", exist_ok=True)
     
-    # Save original data
+    # 원본 데이터 저장
     with open("output/1_원본데이터.json", "w", encoding="utf-8") as f:
         json.dump(episodes, f, indent=2, ensure_ascii=False)
     print("원본 데이터 저장: output/1_원본데이터.json")
     
-    # Save final knowledge graph
+    # 최종 지식 그래프 저장
     with open("output/지식그래프_최종.json", "w", encoding="utf-8") as f:
         json.dump(final_graph.model_dump(), f, ensure_ascii=False, indent=2)
     print("최종 지식그래프 저장: output/지식그래프_최종.json")
 
 def main():
-    """Main function that orchestrates the entire process"""
+    """전체 프로세스를 조율하는 메인 함수"""
     try:
-        # Check for OpenAI API key
+        # OpenAI API 키 확인
         if not os.getenv("OPENAI_API_KEY"):
             print("❌ OPENAI_API_KEY가 설정되지 않았습니다.")
             print("\n설정 방법:")
@@ -291,16 +274,16 @@ def main():
         print("🚀 지식그래프 생성기 시작")
         print("=" * 50)
         
-        # Step 1: Collect data
+        # 단계 1: 데이터 수집
         episodes = collect_data()
         
         if not episodes:
             raise Exception("수집된 에피소드 데이터가 없습니다.")
         
-        # Step 2: Process data
+        # 단계 2: 데이터 처리
         final_graph = process_data(episodes)
         
-        # Step 3: Save outputs
+        # 단계 3: 출력 저장
         save_output(episodes, final_graph)
         
         print("=" * 50)
