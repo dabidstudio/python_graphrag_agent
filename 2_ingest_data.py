@@ -9,9 +9,8 @@ from neo4j_graphrag.experimental.components.types import (
 )
 from neo4j_graphrag.experimental.components.kg_writer import KGWriter, KGWriterModel
 
-
 class Neo4jCreateWriter(KGWriter):
-    """Custom KGWriter that uses CREATE instead of MERGE for relationships."""
+    """관계에 대해 MERGE 대신 CREATE를 사용하는 Custom KGWriter (에피소드별로 다른 관계도 반영)"""
 
     def __init__(self, driver, neo4j_database=None):
         self.driver = driver
@@ -29,7 +28,7 @@ class Neo4jCreateWriter(KGWriter):
         try:
             self._wipe_database()
             with self.driver.session(database=self.neo4j_database) as session:
-                # 1. Write nodes
+                # 1. node 작성
                 for node in graph.nodes:
                     labels = f":{node.label}"
                     session.run(
@@ -40,7 +39,7 @@ class Neo4jCreateWriter(KGWriter):
                         {"id": node.id, "props": node.properties or {}},
                     )
 
-                # 2. Write relationships (always CREATE)
+                # 2. relationship 작성
                 for rel in graph.relationships:
                     session.run(
                         f"""
@@ -64,16 +63,13 @@ class Neo4jCreateWriter(KGWriter):
         except Exception as e:
             return KGWriterModel(status="FAILURE", metadata={"error": str(e)})
 
-
-# -------------------------------
-# Example Usage
-# -------------------------------
 async def write_to_neo4j(graph: Neo4jGraph):
     uri = "neo4j://127.0.0.1:7687"
     user = "neo4j"
-    password = "12345678"  # Change to your real password!
+    password = "12345678"  
     driver = GraphDatabase.driver(uri, auth=(user, password))
-
+    
+    # writer = KGWriter(driver)
     writer = Neo4jCreateWriter(driver)
     result = await writer.run(graph)
     print(result)
