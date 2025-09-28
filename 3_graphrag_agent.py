@@ -20,13 +20,13 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 URI = "neo4j://127.0.0.1:7687"
 AUTH = ("neo4j", "12345678")
 driver = GraphDatabase.driver(URI, auth=AUTH)
-llm = OpenAILLM(model_name="gpt-4o")
+llm = OpenAILLM(model_name="gpt-4.1")
 
 
 
 
 examples = [
-    "USER INPUT: '토미오카 기유는 시즌 1에서 어떤 역할을 했는지 에피소드별로 알려줘.' QUERY: MATCH (n:인간 {name: '토미오카 기유'})-[r]-(m) RETURN n, r, m, properties(r) AS rel_props ORDER BY r.episode_number"
+    "USER INPUT: '토미오카 기유는 시즌 1에서 어떤 역할을 했는지 에피소드별로 알려줘.' QUERY: MATCH (n {name: '토미오카 기유'})-[r]-(m) RETURN n, r, m, properties(r) AS rel_props ORDER BY r.episode_number"
 ]
 
 
@@ -60,7 +60,6 @@ def llm_cal(prompt: str, model: str = "gpt-4.1") -> str:
             {"role": "user", "content": prompt},
         ],
     )
-    print(model, "completed with structured output")
     return response.output_text
 
 
@@ -118,9 +117,9 @@ if __name__=="__main__":
     ## queries for 귀멸의 칼날
     queries = [
 
-    "카마도 탄지로는 시즌 1에서 에피소드별로 어떤 활약을 했어?",
+    # "카마도 탄지로는 시즌 1에서 에피소드별로 어떤 활약을 했어?",
     # "토미오카 기유는 시즌 1에서 어떤 역할을 했는지 에피소드별로 알려줘.",
-    # "카마도 탄지로와 카마도 네즈코 사이에 어떤 사건들이 있었어? 에피소드별로 정리해줘.",
+    "카마도 탄지로와 카마도 네즈코 사이에 어떤 사건들이 있었어? 에피소드별로 정리해줘.",
         ]
     
 
