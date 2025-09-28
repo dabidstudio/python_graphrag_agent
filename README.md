@@ -121,13 +121,6 @@ graphrag-agent/
 └── README.md
 ```
 
-## 🔧 주요 의존성
-
-- `neo4j-graphrag[openai]>=1.10.0` - Neo4j GraphRAG 라이브러리
-- `openai>=1.109.1` - OpenAI API 클라이언트
-- `beautifulsoup4>=4.13.5` - 웹 스크래핑
-- `requests>=2.32.5` - HTTP 요청
-- `python-dotenv>=1.1.1` - 환경변수 관리
 
 ## 🎨 활용 데이터
 
@@ -168,5 +161,6 @@ Examples:
 Input text:
 ```
 </details>
+
 
 
