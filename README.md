@@ -1,8 +1,10 @@
 # GraphRAG Agent 🕸️
 
-AI를 활용한 지식그래프 생성 및 질의응답 시스템
 
 애니메이션 줄거리를 AI로 분석하여 주인공 중심의 지식 그래프를 만들고, 자연어로 질문할 수 있는 GraphRAG 에이전트입니다!
+
+<img width="700" alt="image" src="https://github.com/user-attachments/assets/87f784de-25ba-4dcd-a3b4-0ae93824f9ed" />
+
 
 ## 🎯 프로젝트 소개
 
@@ -166,4 +168,5 @@ Examples:
 Input text:
 ```
 </details>
+
 
